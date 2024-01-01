@@ -24,3 +24,27 @@ resource "aws_subnet" "uuid_api" {
   cidr_block = var.subnet_cidr_block
   map_public_ip_on_launch = true
 }
+
+resource "aws_internet_gateway" "uuid_api" {
+  vpc_id = aws_vpc.uuid_api.id
+}
+
+resource "aws_route_table" "uuid_api" {
+  vpc_id = aws_vpc.uuid_api.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.uuid_api.id
+  }
+}
+
+resource "aws_route" "uuid_api" {
+  route_table_id         = aws_route_table.uuid_api.id
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id             = aws_internet_gateway.uuid_api.id
+}
+
+resource "aws_route_table_association" "uuid_api" {
+  subnet_id      = aws_subnet.uuid_api.id
+  route_table_id = aws_route_table.uuid_api.id
+}

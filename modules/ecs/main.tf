@@ -9,21 +9,32 @@ resource "aws_ecs_task_definition" "uuid_api" {
   requires_compatibilities = ["FARGATE"]
   execution_role_arn = var.execution_role_arn
 
-  container_definitions = jsonencode([
-    {
-      name      = var.ecs_task_family_name
-      image     = var.image_uri
-      cpu       = 256
-      memory    = 512
-      port_mappings = [
-        {
-          container_port = 5000
-          host_port      = 5000
-          protocol       = "tcp"
+  container_definitions = <<DEFINITION
+    [
+      {
+        "name": "${var.ecs_task_family_name}",
+        "image": "${var.image_uri}",
+        "essential": true,
+        "cpu": 256,
+        "memory": 512,
+        "portMappings": [
+          {
+            "containerPort": 5000,
+            "hostPort": 5000,
+            "protocol": "tcp"
+          }
+        ],
+        "logConfiguration": {
+          "logDriver": "awslogs",
+          "options": {
+            "awslogs-group": "${aws_cloudwatch_log_group.uuid_api_log_group.name}",
+            "awslogs-region": "us-east-1",
+            "awslogs-stream-prefix": "ecs"
+          }
         }
-      ]
-    }
-  ])
+      }
+    ]
+    DEFINITION
 
   cpu = "256"  
 }
@@ -40,4 +51,9 @@ resource "aws_ecs_service" "uuid_api" {
     security_groups  = var.ecs_sg_ids
     assign_public_ip = true
   }
+}
+
+resource "aws_cloudwatch_log_group" "uuid_api_log_group" {
+  name = "/ecs/uuid-api-logs"
+  retention_in_days = 1
 }
